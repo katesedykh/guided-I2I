@@ -135,16 +135,8 @@ class Palette(BaseModel):
             
             ret_path.append('Out_{}'.format(self.path[idx]))
             ret_result.append(self.visuals[idx-self.batch_size].detach().float().cpu())
-#            print('ret_path')
-#            print(ret_path)
-#            print('ret_result')
-#            print(ret_result)
-#        if self.task in ['inpainting','uncropping']:
-#            ret_path.extend(['Mask_{}'.format(name) for name in self.path])
-#            ret_result.extend(self.mask_image)
 
         self.results_dict = self.results_dict._replace(name=ret_path, result=ret_result)
-#        print(self.results_dict._asdict())
         return self.results_dict._asdict()
 
     def train_step(self):
@@ -153,12 +145,7 @@ class Palette(BaseModel):
         for train_data in tqdm.tqdm(self.phase_loader):
             self.set_input(train_data)
             self.optG.zero_grad()
-            
-            
-#            self.output, self.visuals = self.netG.restoration(self.cond_image, self.weak_label, 
-#                    gradient=self.cond_grad, classifier_scale = 1, y_t=None, y_0=self.gt_image, mask=None, sample_num=self.sample_num)
-#            
-#            self.cond_grad = 0#cond_fn()
+
             
             loss = self.netG(self.gt_image, self.weak_label, self.cond_image, mask=self.mask)
             loss.backward()
@@ -181,42 +168,17 @@ class Palette(BaseModel):
             scheduler.step()
         return self.train_metrics.result()
     
-   
 
-    
-#    def cond_fn(self, bf, cp, t, y=None):
-#        assert y is not None
-#        with torch.enable_grad():
-#            x_in = torch.cat((bf, cp), dim=1) # concat bf and cp channels
-#            x_in = x_in.detach().requires_grad_(True)
-#            logits = self.classifier(x_in, t)
-#            log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
-#            selected = log_probs[range(len(logits)), y.view(-1)]
-#            return torch.autograd.grad(selected.sum(), x_in)[0] 
-##    
-            
     def val_step(self):
         self.netG.eval()
         self.val_metrics.reset()
         with torch.no_grad():
             for val_data in tqdm.tqdm(self.val_loader):
                 self.set_input(val_data)
-#                if self.opt['distributed']:
-#                    if self.task in ['inpainting','uncropping']:
-#                        self.output, self.visuals = self.netG.module.restoration(self.cond_image, y_t=self.cond_image, 
-#                            y_0=self.gt_image, mask=self.mask, sample_num=self.sample_num)
-#                    else:
-#                        self.output, self.visuals = self.netG.module.restoration(self.cond_image, sample_num=self.sample_num)
-#                else:
-#                    if self.task in ['inpainting','uncropping',Target]:
-                
-            
                 
                 self.output, self.visuals = self.netG.restoration(self.cond_image, self.weak_label, #gradient=0, 
                     classifier_scale = 1, y_t=None, y_0=self.gt_image, mask=None, sample_num=self.sample_num)
-#                    else:
-#                        self.output, self.visuals = self.netG.restoration(self.cond_image, sample_num=self.sample_num)
-                    
+               
                 self.iter += self.batch_size
                 self.writer.set_iter(self.epoch, self.iter, phase='val')
 
@@ -237,25 +199,10 @@ class Palette(BaseModel):
         with torch.no_grad():
             for phase_data in tqdm.tqdm(self.phase_loader):
                 self.set_input(phase_data)
-#                if self.opt['distributed']:
-#                    if self.task in ['inpainting','uncropping']:
-#                        self.output, self.visuals = self.netG.module.restoration(self.cond_image, y_t=self.cond_image, 
-#                            y_0=self.gt_image, mask=self.mask, sample_num=self.sample_num)
-#                    else:
-#                        self.output, self.visuals = self.netG.module.restoration(self.cond_image, sample_num=self.sample_num)
-#                else:
-#                    if self.task in ['inpainting','uncropping']:
-#                self.cond_grad = 0
-#                print(self.cond_image.shape)
-#                print(self.gt_image.shape)
-#                print(self.sample_num)
+
                 self.output, self.visuals = self.netG.restoration(self.cond_image, self.weak_label, #gradient=self.cond_grad
                       classifier_scale = 1, y_t=None, y_0=self.gt_image, mask=None, sample_num=1)
-#                    else:
-#                        self.output, self.visuals = self.netG.restoration(self.cond_image, sample_num=self.sample_num)##############
-                print(self.output.shape)
-#                print('paige!!!')
-                print(self.visuals.shape)
+
                 self.iter += self.batch_size
                 self.writer.set_iter(self.epoch, self.iter, phase='test')
                 for met in self.metrics:
@@ -281,9 +228,7 @@ class Palette(BaseModel):
             netG_label = self.netG.module.__class__.__name__
         else:
             netG_label = self.netG.__class__.__name__
-        print('oooft')    
-        print(netG_label)
-#            print(self.netG_EMA)
+
         self.load_network(network=self.netG, network_label=netG_label, strict=False)
         #if self.ema_scheduler is not None:
         #    self.load_network(network=self.netG_EMA, network_label=netG_label+'_ema', strict=False)
