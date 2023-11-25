@@ -95,17 +95,12 @@ class Network(BaseNetwork):
             extract(self.posterior_mean_coef2, t, y_t.shape) * y_t #+
             #posterior_log_variance_clipped*gradient_5ch*classifier_scale # classifier_scale=1     # classifier guidance here defined by cond_fn in openai implementation
         )
-        
-#        print('nice3_m8')
-#        print(posterior_mean)
-#        print(posterior_mean.shape)
+            
         return posterior_mean, posterior_log_variance_clipped
 
     def p_mean_variance(self, y_t, t, label, gradient, classifier_scale, clip_denoised: bool, y_cond=None):
         noise_level = extract(self.gammas, t, x_shape=(1, 1)).to(y_t.device)
-#        print('y_cond and y_t shapes')
-#        print(y_cond.shape)
-#        print(y_t.shape)
+
         y_0_hat = self.predict_start_from_noise(
                 y_t, t=t, noise=self.denoise_fn(torch.cat([y_cond, y_t], dim=1), noise_level, y = label))
 
@@ -141,15 +136,11 @@ class Network(BaseNetwork):
         ret_arr = y_t
         for i in tqdm(reversed(range(0, self.num_timesteps)), desc='sampling loop time step', total=self.num_timesteps):
             t = torch.full((b,), i, device=y_cond.device, dtype=torch.long)
-#            print(t)
             gradient = 0#self.cond_fn(y_cond, ret_arr, t,y = label)
-#            print(gradient)
-#            print(gradient.shape)
+
             y_t = self.p_sample(y_t, t, label, gradient=gradient, classifier_scale=classifier_scale, y_cond=y_cond)
             if i % sample_inter == 0:
                 ret_arr = torch.cat([ret_arr, y_t], dim=0)
-#                print('ret_array')
-#                print(ret_arr.shape)
         return y_t, ret_arr
 
     def forward(self, y_0, label, y_cond=None, mask=None, noise=None):
@@ -173,24 +164,6 @@ class Network(BaseNetwork):
             loss = self.loss_fn(noise, noise_hat)
         return loss
 
-
-#def create_argparser():
-#    defaults = dict(
-#        clip_denoised=True,
-#        num_samples=10000,
-#        batch_size=8,
-#        use_ddim=False,
-#        model_path="",
-#        classifier_path="",
-#        classifier_scale=1.0,
-#    )
-#    defaults.update(model_and_diffusion_defaults())
-#    defaults.update(classifier_defaults())
-#    parser = argparse.ArgumentParser()
-#    add_dict_to_argparser(parser, defaults)
-#    return parser
-
-
 # gaussian diffusion trainer class
 def exists(x):
     return x is not None
@@ -203,8 +176,6 @@ def default(val, d):
 def extract(a, t, x_shape=(1,1,1,1)):
     b, *_ = t.shape
     out = a.gather(-1, t)
-#    print('mmkay')
-#    print(out.reshape(b,*((1,) * (len(x_shape) - 1))))
     return out.reshape(b, *((1,) * (len(x_shape) - 1)))
 
 # beta_schedule function
